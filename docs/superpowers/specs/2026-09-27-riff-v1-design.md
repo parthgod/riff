@@ -141,9 +141,9 @@ interface SourceAdapter {
 interface StreamInfo { url: string; mirrors: string[]; live: boolean }
 ```
 
-Adapters receive `{ fetch, config }` at construction time (fetch is injected so tests can use fixtures). Each adapter maps raw JSON to domain types in one pure `map*` function per entity.
+Adapters receive `{ http, config }` at construction time. `http` is an `HttpClient` over an injected `fetch`, so tests can use fixtures. Each adapter maps raw JSON to domain types in one pure `map*` function per entity.
 
-- **Audius:** `resolveStream` calls `/tracks/{id}/stream?no_redirect=true`. Mirrors are built by swapping the host of the signed URL for each host in `stream.mirrors`. Base URL and app name come from env.
+- **Audius:** `resolveStream` uses `stream.url` from the track JSON and falls back to `/tracks/{id}/stream?no_redirect=true`. Mirrors are built by swapping the host of the signed URL for each host in `stream.mirrors`. Base URL and app name come from env.
 - **Radio:** `searchTracks` searches stations by name and returns live `Track`s. The adapter does **not** implement `trending`. Instead it has an extra `top({ tag?, limit })` method backing `/radio/top` and `/radio/search?tag=`, filtered as in §2. `resolveStream` calls `/json/url/{uuid}`. It tries a list of mirror servers (`de1`, `de2`) in order.
 
 ### Aggregator
@@ -186,7 +186,7 @@ All routes are under `/api`. Everything except `/api/health` and `/api/auth/*` r
 | `GET /stream/:id` | `302` to the resolved URL; with `?format=json` returns `StreamInfo` (used by the player for mirror fallback) |
 | `GET /artists/:id` · `/artists/:id/tracks` · `/artists/:id/related` | `Artist` · `Track[]` · `Artist[]` |
 | `GET /collections/:id` | `Collection` with tracks |
-| `GET /radio/top` · `GET /radio/search?q=&tag=` | `Track[]` (live) |
+| `GET /radio/top?tag=` · `GET /radio/search?q=&tag=` | `Track[]` (live). `q` searches station names; `tag` alone lists that tag's top stations. |
 
 ### Library (current user)
 
@@ -194,7 +194,7 @@ All routes are under `/api`. Everything except `/api/health` and `/api/auth/*` r
 |---|---|
 | `GET /me` | User profile |
 | `GET /home` | `{ recentlyPlayed: Track[], topGenres: { genre, tracks }[], fromFollowed: Track[], trending: Track[] }` |
-| `GET /me/likes?cursor=` | Liked tracks, newest first, 50 per page |
+| `GET /me/likes?cursor=` | `{ items: { track, likedAt }[], nextCursor }`: liked tracks, newest first, 50 per page |
 | `GET /me/likes/ids` | `EntityId[]`: all liked ids (for heart icons) |
 | `PUT /me/likes/:trackId` · `DELETE …` | Like / unlike (idempotent) |
 | `GET /me/playlists` · `POST /me/playlists` | List / create `{ name, description? }` |
@@ -210,7 +210,7 @@ All routes are under `/api`. Everything except `/api/health` and `/api/auth/*` r
 **Snapshots:** when a track is liked, added to a playlist or recorded in history, the server fetches it through the catalog (cached) and upserts it into `tracks`. The client never supplies metadata. Following an artist stores an `Artist` snapshot the same way. Library reads come only from the DB, so they work while a source is down.
 
 **Home composition:**
-- Top genres: the 3 most frequent genres in the last 200 history rows plus likes. With no history, use `['Electronic', 'Hip-Hop/Rap', 'Lo-Fi']`.
+- Top genres: the 3 most frequent genres in the last 200 history rows plus likes. With fewer than 3, top up from `['Electronic', 'Hip-Hop/Rap', 'Lo-Fi']`.
 - `fromFollowed`: the newest tracks of up to 10 followed artists.
 - Sections are built in parallel; a failed section returns empty.
 
@@ -220,7 +220,7 @@ Better Auth mounted at `/api/auth/*`, email + password, httpOnly session cookie.
 
 ### Errors and headers
 
-- **Error body:** always `{ error: { code, message } }`. Codes: `BAD_REQUEST` 400 (zod), `UNAUTHORIZED` 401, `FORBIDDEN` 403, `NOT_FOUND` 404, `UPSTREAM_ERROR` 502, `UPSTREAM_TIMEOUT` 504, `INTERNAL` 500.
+- **Error body:** always `{ error: { code, message } }` (Better Auth's own `/api/auth/*` responses keep its format). Codes: `BAD_REQUEST` 400 (zod), `UNAUTHORIZED` 401, `FORBIDDEN` 403, `NOT_FOUND` 404, `UPSTREAM_ERROR` 502, `UPSTREAM_TIMEOUT` 504, `INTERNAL` 500.
 - **Mapping:** typed errors thrown by catalog/db are mapped in one `onError` handler.
 - **Cache headers:**
   - Catalog GETs: `Cache-Control: private, max-age=<ttl/2>`. `private` because every route requires a session.
@@ -285,7 +285,7 @@ Actions and rules:
   - Off: restore `original`, with `index` set to the current item's original position.
 - `cycleRepeat()` cycles off → all → one.
 - Queue editing: `addToQueue(tracks)` (tail of `upNext`), `playNext(tracks)` (head of `upNext`), `removeFromQueue(uid)`, `moveInQueue(uid, toIndex)` (within `upNext`), `jumpTo(uid)`, `clearUpNext()`.
-- `selectors.upcoming(state)` returns `upNext` followed by the rest of `order` (what the queue panel shows).
+- `queue.upcoming(state)` returns `upNext` followed by the rest of `order` (what the queue panel shows).
 
 ### Web audio engine (`apps/web/lib/player/`)
 
@@ -395,7 +395,7 @@ Dark UI with its own identity. Not a pixel copy of Spotify, and not Spotify gree
 ### Production
 
 - Neon project on **Postgres 16**; Vercel project with root `apps/web`.
-- Migrations are run explicitly (`pnpm db:migrate` with the Neon URL), never during the build.
+- Migrations are run explicitly (`pnpm db:migrate` with Neon's direct, non-pooled URL), never during the build.
 
 ## 13. Roadmap
 
