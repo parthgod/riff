@@ -32,7 +32,7 @@ Verified live on 2026-09-27.
 
 | Source | Role | Auth | Notes |
 |---|---|---|---|
-| **Audius** `api.audius.co/v1` | Primary catalog: tracks, artists, playlists/albums, trending by genre, related artists | `app_name` query param only | `/tracks/{id}/stream?no_redirect=true` returns a signed URL. The track JSON includes `stream.mirrors` (alternate hosts for the same path). Media and artwork hosts send `Access-Control-Allow-Origin: *` and support byte ranges. Filter out tracks that are `!is_streamable`, `is_stream_gated`, or `is_delete`. |
+| **Audius** `api.audius.co/v1` | Primary catalog: tracks, artists, playlists/albums, trending by genre, related artists | `app_name` query param only | `/tracks/{id}/stream?no_redirect=true` returns a signed URL. The track JSON includes `stream.mirrors` (alternate hosts for the same path). Media and artwork hosts send `Access-Control-Allow-Origin: *` and support byte ranges. Filter out tracks that are `!is_streamable`, `is_stream_gated`, or `is_delete`. Unknown ids return **400** `invalid trackId` (not 404); treat 400/404 on single-entity reads as not-found. `/users/{id}/tracks?sort=plays` returns the artist pick first, then tracks by plays. |
 | **Jamendo** `api.jamendo.com/v3.0` | Secondary catalog (Creative Commons) | Free `client_id` | The adapter is enabled only when `JAMENDO_CLIENT_ID` is set. Tests use fixtures. |
 | **Radio Browser** `*.api.radio-browser.info/json` | Live radio | None; send a descriptive `User-Agent` | Keep only stations with an **https** `url_resolved` and `hls == 0`: browsers block http media on https pages, and HLS needs extra tooling. Call `/json/url/{uuid}` on play, as their guidelines ask. |
 | **LRCLIB** `lrclib.net/api` | Lyrics (synced LRC + plain) | None; send `User-Agent` | Try `/get` (artist + title + duration) first, then fall back to `/search` and pick the candidate with the closest duration (±3 s). |
@@ -108,7 +108,7 @@ interface Artist {
 interface Collection {                   // source-side playlist or album
   id: EntityId; source: SourceId; kind: 'playlist' | 'album';
   title: string; description?: string; artwork: Artwork;
-  owner: ArtistRef; trackCount: number; tracks?: Track[];
+  owner: ArtistRef; trackCount?: number; tracks?: Track[];
 }
 
 interface Lyrics {
@@ -130,7 +130,7 @@ interface SourceAdapter {
   searchTracks(q: string, o: { limit: number; signal: AbortSignal }): Promise<Track[]>;
   searchArtists?(q: string, o): Promise<Artist[]>;
   searchCollections?(q: string, o): Promise<Collection[]>;
-  trending?(o: { genre?: string; window?: 'week' | 'month' | 'year'; limit: number; signal }): Promise<Track[]>;
+  trending?(o: { genre?: string; window?: 'week' | 'month' | 'allTime'; limit: number; signal }): Promise<Track[]>;
   getTrack(nativeId: string, o): Promise<Track | null>;
   getArtist?(nativeId: string, o): Promise<Artist | null>;
   getArtistTracks?(nativeId: string, o: { limit: number; signal }): Promise<Track[]>;
@@ -144,13 +144,13 @@ interface StreamInfo { url: string; mirrors: string[]; live: boolean }
 Adapters receive `{ fetch, config }` at construction time (fetch is injected so tests can use fixtures). Each adapter maps raw JSON to domain types in one pure `map*` function per entity.
 
 - **Audius:** `resolveStream` calls `/tracks/{id}/stream?no_redirect=true`. Mirrors are built by swapping the host of the signed URL for each host in `stream.mirrors`. Base URL and app name come from env.
-- **Radio:** `searchTracks` searches stations by name and returns live `Track`s. The adapter does **not** implement `trending`. Instead it has an extra `top({ tag?, limit })` method backing `/radio/top` and `/radio/search?tag=`, filtered as in §2. `resolveStream` calls `/json/url/{uuid}`. It tries a list of mirror servers (`de1`, `de2`, `fi1`) in order.
+- **Radio:** `searchTracks` searches stations by name and returns live `Track`s. The adapter does **not** implement `trending`. Instead it has an extra `top({ tag?, limit })` method backing `/radio/top` and `/radio/search?tag=`, filtered as in §2. `resolveStream` calls `/json/url/{uuid}`. It tries a list of mirror servers (`de1`, `de2`) in order.
 
 ### Aggregator
 
 - **Routing:** single-entity calls go to the adapter named by the id prefix. Unknown prefix → `NotFound`.
 - **Fan-out:** `search` and `trending` call every enabled adapter with `Promise.allSettled` and a per-source `AbortSignal.timeout(3000)`.
-- **Merge:** tracks are interleaved round-robin across sources, keeping each source's own relevance order. They are deduped on a normalized `artist|title` key (lowercased; `feat.`, brackets and punctuation stripped; first occurrence wins). Stations are kept in a separate `stations` list, never mixed into `tracks`.
+- **Merge:** tracks are interleaved round-robin across sources, keeping each source's own relevance order. They are deduped **across sources only** on a normalized `artist|title` key (lowercased, accents and punctuation stripped, `feat.`/`ft.` credits removed; other bracketed words like "Remix" kept; first occurrence wins). Same-source near-duplicates are kept. Stations are kept in a separate `stations` list, never mixed into `tracks`.
 - **Response:** `{ tracks, artists, collections, stations, sources: Record<SourceId, 'ok'|'error'|'timeout'|'disabled'> }`. One source failing never fails the request.
 
 ### Cache
@@ -320,7 +320,7 @@ Actions and rules:
 /sign-in, /sign-up                      (auth) layout
 /                                       Home
 /search?q=                              Search (genre grid when q is empty)
-/genre/[genre]                          Trending in genre (week/month/year tabs)
+/genre/[genre]                          Trending in genre (week / month / all-time tabs)
 /artist/[id]                            Artist: header, top tracks, related, follow button
 /collection/[id]                        Source playlist/album
 /playlist/[id]                          User playlist (edit, drag reorder, remove)
@@ -365,7 +365,7 @@ Dark UI with its own identity. Not a pixel copy of Spotify, and not Spotify gree
 
 - **`core`:** exhaustive reducer tests (every action × shuffle/repeat combinations, duplicates, empty queues), LRC parser, id helpers, dedupe-key normalization.
 - **`catalog`:**
-  - Adapters are tested against recorded JSON fixtures in `__fixtures__/`, captured from the live APIs, through an injected `fetch`.
+  - Adapters are tested through an injected `fetch` against typed fixture factories trimmed from real API responses. A `LIVE=1` suite (`pnpm --filter @riff/catalog test:live`) checks the real upstreams to catch mapping drift.
   - Aggregator tests with fake adapters: timeout, failure, interleave, dedupe, `sources` statuses.
   - Cache tests: TTL expiry, LRU eviction, single-flight.
 - **`api`:** route tests via `app.request()` against a real Postgres database, `riff_test`, truncated between tests, with a stubbed catalog. They cover the auth guard, likes idempotency, playlist ordering and reorder, history, the home fallback, and error mapping.
@@ -390,7 +390,7 @@ Dark UI with its own identity. Not a pixel copy of Spotify, and not Spotify gree
 | `AUDIUS_API_URL` | default `https://api.audius.co` |
 | `AUDIUS_APP_NAME` | default `riff` |
 | `JAMENDO_CLIENT_ID` | optional; enables Jamendo |
-| `RADIO_BROWSER_SERVERS` | optional comma list; default `de1,de2,fi1` mirrors |
+| `RADIO_BROWSER_SERVERS` | optional comma list; default `de1,de2` mirrors |
 
 ### Production
 
