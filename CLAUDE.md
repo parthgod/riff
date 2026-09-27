@@ -1,3 +1,34 @@
+# Riff: project guide
+
+A free, Spotify-like music app used as a personal daily driver (web now, Expo mobile later).
+Uses legal sources only: Audius (primary, no key), Jamendo (optional key), Radio Browser, and LRCLIB lyrics.
+Never add YouTube-scraping sources.
+
+- Spec: `docs/superpowers/specs/2026-09-27-riff-v1-design.md`
+- Plans: `docs/superpowers/plans/`. Plan 1 (foundation) is done; Plan 2 (db + api) and Plan 3 (web) are next.
+
+## Layout
+- `packages/core`: domain types + zod schemas, entity ids, LRC parser, and the queue state machine (exported as `queue`). Pure: no I/O; randomness and ids are injected via `QueueEnv`.
+- `packages/catalog`: source adapters (`src/sources/*`), the aggregator (fan-out, cross-source dedupe, cache), and the LRCLIB client. Uses Web APIs only; no `node:` imports outside tests.
+- Coming in Plan 2: `packages/db` (Drizzle), `packages/api` (Hono). Coming in Plan 3: `apps/web` (Next.js, which mounts the API at `/api`).
+
+## Commands (from the repo root)
+- `pnpm install`
+- `pnpm test`: all unit tests via Turbo
+- `pnpm typecheck`, `pnpm lint`, `pnpm format`
+- `set -a && . ./.env && set +a && pnpm --filter @riff/catalog test:live`: checks the real upstream APIs
+
+## Conventions
+- TypeScript is strict with `noUncheckedIndexedAccess`. Packages export TS source (`exports: ./src/index.ts`) and have no build step.
+- Dependency versions are pinned once in `pnpm-workspace.yaml` under `catalog:`; reference them as `"catalog:"`.
+- Entity ids look like `source:nativeId`: `audius:NQwXON0`, `jamendo:album:42`, `radio:<uuid>`. User playlist ids are UUIDs.
+- Tests are Vitest files colocated as `*.test.ts`. Unit tests never touch the network; use `packages/catalog/src/testing/fake-fetch.ts`.
+- Upstream quirks:
+  - Audius returns 400 (not 404) for unknown ids.
+  - Audius trending windows are `week | month | allTime`.
+  - Radio streams must be https and non-HLS.
+- Local database: native Postgres 16, with role and databases `riff` / `riff_test` (password `riff`). Env vars live in the root `.env`; see `.env.example`.
+
 <!-- dgc-policy-v11 -->
 # Dual-Graph Context Policy
 

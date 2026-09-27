@@ -16,6 +16,12 @@ export {
   type TrendingResult,
 } from './aggregator';
 export { type Cache, createMemoryCache, type MemoryCacheOptions, type Ttl } from './cache';
+export {
+  type CatalogConfig,
+  catalogConfigFromEnv,
+  createCatalog,
+  DEFAULT_USER_AGENT,
+} from './create-catalog';
 export { CatalogError, type CatalogErrorCode, isCatalogError } from './errors';
 export { createHttpClient, type FetchLike, type GetJsonOptions, type HttpClient } from './http';
 export { createLrclibClient, type LyricsClient, type LyricsQuery } from './lyrics/lrclib';
