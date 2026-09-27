@@ -10,3 +10,4 @@ export { CatalogError, type CatalogErrorCode, isCatalogError } from './errors';
 export { createHttpClient, type FetchLike, type GetJsonOptions, type HttpClient } from './http';
 export { type AudiusConfig, createAudiusAdapter } from './sources/audius/adapter';
 export { createJamendoAdapter, type JamendoConfig } from './sources/jamendo/adapter';
+export { createRadioAdapter, type RadioConfig } from './sources/radio/adapter';
