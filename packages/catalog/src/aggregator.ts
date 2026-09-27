@@ -9,7 +9,7 @@ import {
   type Track,
   type TrendingWindow,
 } from '@riff/core';
-import type { RadioAdapter, SourceAdapter } from './adapter';
+import type { ArtistTrackSort, RadioAdapter, SourceAdapter } from './adapter';
 import type { Cache } from './cache';
 import { CatalogError, isCatalogError } from './errors';
 import type { LyricsClient } from './lyrics/lrclib';
@@ -42,7 +42,7 @@ export interface Catalog {
   /** Single-entity reads reject with CatalogError NOT_FOUND for unknown or invalid ids. */
   getTrack(id: string): Promise<Track>;
   getArtist(id: string): Promise<Artist>;
-  getArtistTracks(id: string, options: { limit: number }): Promise<Track[]>;
+  getArtistTracks(id: string, options: { limit: number; sort?: ArtistTrackSort }): Promise<Track[]>;
   getRelatedArtists(id: string, options: { limit: number }): Promise<Artist[]>;
   getCollection(id: string): Promise<Collection>;
   resolveStream(id: string): Promise<StreamInfo>;
@@ -217,9 +217,9 @@ export function createAggregator(deps: AggregatorDeps): Catalog {
         adapter.getArtist?.(nativeId, { signal }),
       ),
 
-    getArtistTracks: (id, { limit }) =>
-      cachedList<Track>(`artist-tracks:${id}:${limit}`, id, (adapter, nativeId, signal) =>
-        adapter.getArtistTracks?.(nativeId, { limit, signal }),
+    getArtistTracks: (id, { limit, sort = 'popular' }) =>
+      cachedList<Track>(`artist-tracks:${id}:${sort}:${limit}`, id, (adapter, nativeId, signal) =>
+        adapter.getArtistTracks?.(nativeId, { limit, sort, signal }),
       ),
 
     getRelatedArtists: (id, { limit }) =>

@@ -82,6 +82,14 @@ describe('jamendo adapter', () => {
     expect(url(3).searchParams.get('order')).toBe('popularity_total');
   });
 
+  test('getArtistTracks can list the newest tracks instead of the most popular', async () => {
+    const { adapter, url } = setup([
+      { match: '/v3.0/tracks/', json: jamendoOk([rawJamendoTrack()]) },
+    ]);
+    await adapter.getArtistTracks!('7872', { limit: 5, sort: 'newest' });
+    expect(url().searchParams.get('order')).toBe('releasedate_desc');
+  });
+
   test('getCollection loads album tracks and ignores non-album ids', async () => {
     const { adapter, fetch, url } = setup([
       { match: '/v3.0/albums/tracks/', json: jamendoOk([rawJamendoAlbum()]) },

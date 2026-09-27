@@ -1,4 +1,6 @@
 export type {
+  ArtistTrackSort,
+  ArtistTracksOptions,
   CallOptions,
   ListOptions,
   RadioAdapter,

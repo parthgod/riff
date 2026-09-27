@@ -94,7 +94,10 @@ async function newFromFollowed(deps: HomeDeps, userId: string): Promise<Track[]>
   const artists = await listFollowing(deps.db, userId, HOME_LIMITS.followedArtists);
   const lists = await Promise.allSettled(
     artists.map((artist) =>
-      deps.catalog.getArtistTracks(artist.id, { limit: HOME_LIMITS.tracksPerArtist }),
+      deps.catalog.getArtistTracks(artist.id, {
+        limit: HOME_LIMITS.tracksPerArtist,
+        sort: 'newest',
+      }),
     ),
   );
   const seen = new Set<string>();

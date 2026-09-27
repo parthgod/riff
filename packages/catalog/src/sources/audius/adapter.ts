@@ -112,10 +112,9 @@ export function createAudiusAdapter({
       return user ? mapOneValid(user, mapUser, ArtistSchema) : null;
     },
 
-    async getArtistTracks(id, { limit, signal }) {
-      return mapTracks(
-        await list<AudiusTrack>(`/users/${enc(id)}/tracks`, { sort: 'plays', limit }, signal),
-      );
+    async getArtistTracks(id, { limit, sort, signal }) {
+      const params = { sort: sort === 'newest' ? 'date' : 'plays', limit };
+      return mapTracks(await list<AudiusTrack>(`/users/${enc(id)}/tracks`, params, signal));
     },
 
     async getRelatedArtists(id, { limit, signal }) {

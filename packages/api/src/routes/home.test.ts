@@ -73,6 +73,16 @@ describe('GET /home', () => {
     ]);
   });
 
+  test('fromFollowed asks for each followed artist’s newest tracks, not their most played', async () => {
+    api.catalog.addArtists(makeArtist(1));
+    await alice.put('/me/following/audius:a1');
+    await home(alice);
+    expect(api.catalog.getArtistTracks).toHaveBeenCalledWith('audius:a1', {
+      limit: 5,
+      sort: 'newest',
+    });
+  });
+
   test('fromFollowed merges followed artists’ tracks newest first, without duplicates', async () => {
     api.catalog.addArtists(makeArtist(1), makeArtist(2), makeArtist(3));
     api.catalog.setArtistTracks('audius:a1', [

@@ -203,6 +203,27 @@ describe('single entities', () => {
     await expect(catalog.getRelatedArtists('radio:x', { limit: 5 })).resolves.toEqual([]);
   });
 
+  test('getArtistTracks passes the sort through and caches each sort separately', async () => {
+    const audius = fakeAdapter('audius', {
+      getArtistTracks: vi.fn(async () => [t('audius', 1)]),
+    });
+    const catalog = setup({ music: [audius] });
+    await catalog.getArtistTracks('audius:a1', { limit: 5 });
+    await catalog.getArtistTracks('audius:a1', { limit: 5, sort: 'newest' });
+    await catalog.getArtistTracks('audius:a1', { limit: 5, sort: 'newest' });
+    expect(audius.getArtistTracks).toHaveBeenCalledTimes(2);
+    expect(audius.getArtistTracks).toHaveBeenNthCalledWith(
+      1,
+      'a1',
+      expect.objectContaining({ limit: 5, sort: 'popular' }),
+    );
+    expect(audius.getArtistTracks).toHaveBeenNthCalledWith(
+      2,
+      'a1',
+      expect.objectContaining({ limit: 5, sort: 'newest' }),
+    );
+  });
+
   test('resolveStream is never cached', async () => {
     const audius = fakeAdapter('audius');
     const catalog = setup({ music: [audius] });

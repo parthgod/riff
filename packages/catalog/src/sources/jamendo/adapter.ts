@@ -104,8 +104,9 @@ export function createJamendoAdapter({
       return artist ? mapOneValid(artist, mapArtist, ArtistSchema) : null;
     },
 
-    async getArtistTracks(id, { limit, signal }) {
-      const params: Params = { ...TRACK_PARAMS, artist_id: id, order: 'popularity_total', limit };
+    async getArtistTracks(id, { limit, sort, signal }) {
+      const order = sort === 'newest' ? 'releasedate_desc' : 'popularity_total';
+      const params: Params = { ...TRACK_PARAMS, artist_id: id, order, limit };
       return mapTracks(await results<JamendoTrack>('/tracks', params, signal));
     },
 

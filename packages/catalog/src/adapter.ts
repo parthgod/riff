@@ -8,6 +8,14 @@ export interface ListOptions extends CallOptions {
   limit: number;
 }
 
+/** Which of an artist's tracks to list: the most played, or the most recently released. */
+export type ArtistTrackSort = 'popular' | 'newest';
+
+export interface ArtistTracksOptions extends ListOptions {
+  /** Default: 'popular'. */
+  sort?: ArtistTrackSort;
+}
+
 export interface TrendingOptions extends ListOptions {
   genre?: string;
   window?: TrendingWindow;
@@ -23,7 +31,7 @@ export interface SourceAdapter {
   /** Resolves to null when the id is unknown or not playable. */
   getTrack(nativeId: string, options?: CallOptions): Promise<Track | null>;
   getArtist?(nativeId: string, options?: CallOptions): Promise<Artist | null>;
-  getArtistTracks?(nativeId: string, options: ListOptions): Promise<Track[]>;
+  getArtistTracks?(nativeId: string, options: ArtistTracksOptions): Promise<Track[]>;
   getRelatedArtists?(nativeId: string, options: ListOptions): Promise<Artist[]>;
   /** Includes playable tracks. */
   getCollection?(nativeId: string, options?: CallOptions): Promise<Collection | null>;

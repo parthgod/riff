@@ -133,7 +133,7 @@ interface SourceAdapter {
   trending?(o: { genre?: string; window?: 'week' | 'month' | 'allTime'; limit: number; signal }): Promise<Track[]>;
   getTrack(nativeId: string, o): Promise<Track | null>;
   getArtist?(nativeId: string, o): Promise<Artist | null>;
-  getArtistTracks?(nativeId: string, o: { limit: number; signal }): Promise<Track[]>;
+  getArtistTracks?(nativeId: string, o: { limit: number; sort?: 'popular' | 'newest'; signal }): Promise<Track[]>;
   getRelatedArtists?(nativeId: string, o): Promise<Artist[]>;
   getCollection?(nativeId: string, o): Promise<Collection | null>;   // includes tracks
   resolveStream(nativeId: string, o): Promise<StreamInfo>;

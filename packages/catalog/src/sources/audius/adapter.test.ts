@@ -73,6 +73,14 @@ describe('audius adapter', () => {
     expect(related[0]?.id).toBe('audius:rel1');
   });
 
+  test('getArtistTracks can list the newest tracks instead of the most played', async () => {
+    const { adapter, url } = setup([
+      { match: '/v1/users/k259kWP/tracks', json: { data: [rawTrack()] } },
+    ]);
+    await adapter.getArtistTracks!('k259kWP', { limit: 5, sort: 'newest' });
+    expect(url().searchParams.get('sort')).toBe('date');
+  });
+
   test('getCollection unwraps the single-item array', async () => {
     const { adapter } = setup([
       { match: '/v1/playlists/xPjKvK9', json: { data: [rawPlaylist()] } },
