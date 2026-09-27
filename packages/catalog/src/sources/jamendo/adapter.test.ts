@@ -117,3 +117,16 @@ describe('jamendo adapter', () => {
     await expect(adapter.resolveStream('gone')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 });
+
+describe('jamendo adapter with malformed upstream items', () => {
+  test('skips tracks that cannot be mapped instead of failing the source', async () => {
+    const { adapter } = setup([
+      {
+        match: '/v3.0/tracks/',
+        json: jamendoOk([{ ...rawJamendoTrack({ id: 'bad' }), name: null }, rawJamendoTrack()]),
+      },
+    ]);
+    const tracks = await adapter.searchTracks('x', { limit: 5 });
+    expect(tracks.map((t) => t.id)).toEqual(['jamendo:1886257']);
+  });
+});

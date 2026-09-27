@@ -1,6 +1,8 @@
+import { ArtistSchema, CollectionSchema, TrackSchema } from '@riff/core';
 import type { SourceAdapter } from '../../adapter';
 import { CatalogError } from '../../errors';
 import type { HttpClient } from '../../http';
+import { mapOneValid, mapValid } from '../../map-valid';
 import { mapAlbum, mapArtist, mapTrack, mapTracks, toJamendoTag } from './map';
 import type { JamendoAlbum, JamendoArtist, JamendoResponse, JamendoTrack } from './types';
 
@@ -65,9 +67,12 @@ export function createJamendoAdapter({
     },
 
     async searchArtists(query, { limit, signal }) {
-      return (await results<JamendoArtist>('/artists', { namesearch: query, limit }, signal)).map(
-        mapArtist,
+      const artists = await results<JamendoArtist>(
+        '/artists',
+        { namesearch: query, limit },
+        signal,
       );
+      return mapValid(artists, mapArtist, ArtistSchema);
     },
 
     async searchCollections(query, { limit, signal }) {
@@ -76,7 +81,7 @@ export function createJamendoAdapter({
         { namesearch: query, limit, imagesize: '600' },
         signal,
       );
-      return albums.map((album) => mapAlbum(album, { withTracks: false }));
+      return mapValid(albums, (album) => mapAlbum(album, { withTracks: false }), CollectionSchema);
     },
 
     async trending({ genre, window = 'week', limit, signal }) {
@@ -91,12 +96,12 @@ export function createJamendoAdapter({
 
     async getTrack(id, options) {
       const track = await streamableTrack(id, options?.signal);
-      return track ? mapTrack(track) : null;
+      return track ? mapOneValid(track, mapTrack, TrackSchema) : null;
     },
 
     async getArtist(id, options) {
       const [artist] = await results<JamendoArtist>('/artists', { id }, options?.signal);
-      return artist ? mapArtist(artist) : null;
+      return artist ? mapOneValid(artist, mapArtist, ArtistSchema) : null;
     },
 
     async getArtistTracks(id, { limit, signal }) {
@@ -112,7 +117,8 @@ export function createJamendoAdapter({
         { id: albumId, audioformat: 'mp32', imagesize: '600' },
         options?.signal,
       );
-      return album ? mapAlbum(album, { withTracks: true }) : null;
+      if (!album) return null;
+      return mapOneValid(album, (a) => mapAlbum(a, { withTracks: true }), CollectionSchema);
     },
 
     async resolveStream(id, options) {

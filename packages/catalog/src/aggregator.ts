@@ -150,12 +150,18 @@ export function createAggregator(deps: AggregatorDeps): Catalog {
                 adapter.searchArtists?.(q, options) ?? [],
                 adapter.searchCollections?.(q, options) ?? [],
               ]);
-              const settledTracks = settle(adapter.id, tracks, []);
-              sources[adapter.id] = settledTracks.status;
+              const settled = {
+                tracks: settle(adapter.id, tracks, []),
+                artists: settle(adapter.id, artists, []),
+                collections: settle(adapter.id, collections, []),
+              };
+              // Any failed sub-search makes the result partial, so it is retried soon.
+              sources[adapter.id] =
+                Object.values(settled).find((part) => part.status !== 'ok')?.status ?? 'ok';
               return {
-                tracks: settledTracks.value,
-                artists: artists.status === 'fulfilled' ? artists.value : [],
-                collections: collections.status === 'fulfilled' ? collections.value : [],
+                tracks: settled.tracks.value,
+                artists: settled.artists.value,
+                collections: settled.collections.value,
               };
             }),
           );

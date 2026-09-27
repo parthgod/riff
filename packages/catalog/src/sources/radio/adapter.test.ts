@@ -89,3 +89,19 @@ describe('radio adapter', () => {
     await expect(adapter.resolveStream('bad')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 });
+
+describe('radio adapter with malformed upstream items', () => {
+  test('skips stations that cannot be mapped before applying the limit', async () => {
+    const { adapter } = setup([
+      {
+        match: '/json/stations/search',
+        json: [
+          { ...rawStation({ stationuuid: 'bad' }), name: null },
+          rawStation({ stationuuid: 'ok' }),
+        ],
+      },
+    ]);
+    const stations = await adapter.searchTracks('x', { limit: 1 });
+    expect(stations.map((t) => t.id)).toEqual(['radio:ok']);
+  });
+});

@@ -1,4 +1,12 @@
-import { type Artist, type Artwork, type Collection, makeEntityId, type Track } from '@riff/core';
+import {
+  type Artist,
+  type Artwork,
+  type Collection,
+  makeEntityId,
+  type Track,
+  TrackSchema,
+} from '@riff/core';
+import { mapValid } from '../../map-valid';
 import type { JamendoAlbum, JamendoAlbumTrack, JamendoArtist, JamendoTrack } from './types';
 
 const TAG_BY_GENRE: Readonly<Record<string, string>> = {
@@ -59,7 +67,11 @@ export function mapTrack(track: JamendoTrack): Track {
 }
 
 export const mapTracks = (tracks: readonly JamendoTrack[]): Track[] =>
-  tracks.filter((track) => track.audio).map(mapTrack);
+  mapValid(
+    tracks.filter((track) => track.audio),
+    mapTrack,
+    TrackSchema,
+  );
 
 export function mapArtist(artist: JamendoArtist): Artist {
   return {
@@ -95,6 +107,8 @@ export function mapAlbum(album: JamendoAlbum, { withTracks }: { withTracks: bool
     artwork: jamendoArtwork(album.image),
     owner: { id: makeEntityId('jamendo', album.artist_id), name: album.artist_name },
     trackCount: album.tracks ? streamable.length : undefined,
-    tracks: withTracks ? streamable.map((track) => mapAlbumTrack(track, album)) : undefined,
+    tracks: withTracks
+      ? mapValid(streamable, (track) => mapAlbumTrack(track, album), TrackSchema)
+      : undefined,
   };
 }

@@ -1,7 +1,8 @@
-import type { Track } from '@riff/core';
+import { type Track, TrackSchema } from '@riff/core';
 import type { ListOptions, RadioAdapter } from '../../adapter';
 import { CatalogError, isCatalogError } from '../../errors';
 import type { HttpClient } from '../../http';
+import { mapOneValid, mapValid } from '../../map-valid';
 import { isPlayableStreamUrl, isUsableStation, mapStation } from './map';
 import type { RadioStation, RadioUrlResponse } from './types';
 
@@ -54,7 +55,8 @@ export function createRadioAdapter({
       },
       signal,
     );
-    return (raw ?? []).filter(isUsableStation).slice(0, limit).map(mapStation);
+    // Map before trimming so a dropped malformed station does not shrink the page.
+    return mapValid((raw ?? []).filter(isUsableStation), mapStation, TrackSchema).slice(0, limit);
   }
 
   return {
@@ -71,7 +73,9 @@ export function createRadioAdapter({
           {},
           options?.signal,
         )) ?? [];
-      return station && isUsableStation(station) ? mapStation(station) : null;
+      return station && isUsableStation(station)
+        ? mapOneValid(station, mapStation, TrackSchema)
+        : null;
     },
 
     async resolveStream(uuid, options) {

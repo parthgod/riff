@@ -142,3 +142,61 @@ describe('audius adapter', () => {
     await expect(adapter.resolveStream('gated')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 });
+
+describe('audius adapter with malformed upstream items', () => {
+  test('searchTracks skips items that cannot be mapped instead of failing the source', async () => {
+    const { adapter } = setup([
+      {
+        match: '/v1/tracks/search',
+        json: {
+          data: [
+            rawTrack(),
+            { ...rawTrack({ id: 'nouser' }), user: undefined },
+            { ...rawTrack({ id: 'notitle' }), title: null },
+            rawTrack({ id: 'Abc123' }),
+          ],
+        },
+      },
+    ]);
+    const tracks = await adapter.searchTracks('lofi', { limit: 10 });
+    expect(tracks.map((t) => t.id)).toEqual(['audius:NQwXON0', 'audius:Abc123']);
+  });
+
+  test('a malformed track inside a playlist is dropped rather than failing the playlist', async () => {
+    const { adapter } = setup([
+      {
+        match: '/v1/playlists/p1',
+        json: {
+          data: [
+            { ...rawPlaylist(), tracks: [rawTrack(), { ...rawTrack({ id: 'x' }), title: null }] },
+          ],
+        },
+      },
+    ]);
+    const collection = await adapter.getCollection!('p1');
+    expect(collection?.tracks?.map((t) => t.id)).toEqual(['audius:NQwXON0']);
+  });
+
+  test('getTrack resolves null for a malformed track', async () => {
+    const { adapter } = setup([
+      { match: '/v1/tracks/nouser', json: { data: { ...rawTrack({ id: 'nouser' }), user: null } } },
+    ]);
+    expect(await adapter.getTrack('nouser')).toBeNull();
+  });
+
+  test('artist search keeps users missing is_verified and skips users without an id', async () => {
+    const { adapter } = setup([
+      {
+        match: '/v1/users/search',
+        json: {
+          data: [
+            { ...rawUser(), is_verified: undefined },
+            { ...rawUser(), id: '' },
+          ],
+        },
+      },
+    ]);
+    const artists = await adapter.searchArtists!('van', { limit: 5 });
+    expect(artists.map((a) => [a.id, a.verified])).toEqual([['audius:k259kWP', false]]);
+  });
+});

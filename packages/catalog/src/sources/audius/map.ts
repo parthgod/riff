@@ -1,4 +1,12 @@
-import { type Artist, type Artwork, type Collection, makeEntityId, type Track } from '@riff/core';
+import {
+  type Artist,
+  type Artwork,
+  type Collection,
+  makeEntityId,
+  type Track,
+  TrackSchema,
+} from '@riff/core';
+import { mapValid } from '../../map-valid';
 import type { AudiusArtwork, AudiusPlaylist, AudiusTrack, AudiusUser } from './types';
 
 const AUDIUS_WEB = 'https://audius.co';
@@ -34,7 +42,7 @@ export function mapTrack(track: AudiusTrack): Track {
 }
 
 export const mapTracks = (tracks: readonly AudiusTrack[]): Track[] =>
-  tracks.filter(isPlayable).map(mapTrack);
+  mapValid(tracks.filter(isPlayable), mapTrack, TrackSchema);
 
 export function mapUser(user: AudiusUser): Artist {
   return {
@@ -47,7 +55,7 @@ export function mapUser(user: AudiusUser): Artist {
     bio: user.bio || undefined,
     followerCount: user.follower_count ?? undefined,
     trackCount: user.track_count ?? undefined,
-    verified: user.is_verified,
+    verified: Boolean(user.is_verified),
   };
 }
 

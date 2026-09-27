@@ -1,6 +1,8 @@
+import { ArtistSchema, CollectionSchema, TrackSchema } from '@riff/core';
 import type { SourceAdapter } from '../../adapter';
 import { CatalogError } from '../../errors';
 import type { HttpClient } from '../../http';
+import { mapOneValid, mapValid } from '../../map-valid';
 import { isPlayable, mapPlaylist, mapTrack, mapTracks, mapUser } from './map';
 import type { AudiusPlaylist, AudiusTrack, AudiusUser } from './types';
 
@@ -81,12 +83,17 @@ export function createAudiusAdapter({
     },
 
     async searchArtists(query, { limit, signal }) {
-      return (await list<AudiusUser>('/users/search', { query, limit }, signal)).map(mapUser);
+      const users = await list<AudiusUser>('/users/search', { query, limit }, signal);
+      return mapValid(users, mapUser, ArtistSchema);
     },
 
     async searchCollections(query, { limit, signal }) {
       const playlists = await list<AudiusPlaylist>('/playlists/search', { query, limit }, signal);
-      return playlists.map((playlist) => mapPlaylist(playlist, { withTracks: false }));
+      return mapValid(
+        playlists,
+        (playlist) => mapPlaylist(playlist, { withTracks: false }),
+        CollectionSchema,
+      );
     },
 
     async trending({ genre, window = 'week', limit, signal }) {
@@ -97,12 +104,12 @@ export function createAudiusAdapter({
 
     async getTrack(id, options) {
       const track = await playableTrack(id, options?.signal);
-      return track ? mapTrack(track) : null;
+      return track ? mapOneValid(track, mapTrack, TrackSchema) : null;
     },
 
     async getArtist(id, options) {
       const user = await one<AudiusUser>(`/users/${enc(id)}`, options?.signal);
-      return user ? mapUser(user) : null;
+      return user ? mapOneValid(user, mapUser, ArtistSchema) : null;
     },
 
     async getArtistTracks(id, { limit, signal }) {
@@ -112,13 +119,15 @@ export function createAudiusAdapter({
     },
 
     async getRelatedArtists(id, { limit, signal }) {
-      return (await list<AudiusUser>(`/users/${enc(id)}/related`, { limit }, signal)).map(mapUser);
+      const users = await list<AudiusUser>(`/users/${enc(id)}/related`, { limit }, signal);
+      return mapValid(users, mapUser, ArtistSchema);
     },
 
     async getCollection(id, options) {
       const data = await one<AudiusPlaylist[]>(`/playlists/${enc(id)}`, options?.signal);
       const playlist = data?.[0];
-      return playlist ? mapPlaylist(playlist, { withTracks: true }) : null;
+      if (!playlist) return null;
+      return mapOneValid(playlist, (p) => mapPlaylist(p, { withTracks: true }), CollectionSchema);
     },
 
     async resolveStream(id, options) {

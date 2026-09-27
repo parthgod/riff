@@ -248,3 +248,24 @@ describe('radio', () => {
     expect(await catalog.radioSearch('  ', { limit: 3 })).toEqual([]);
   });
 });
+
+describe('search sub-requests', () => {
+  test('reports artist/collection search failures and caches the result as partial', async () => {
+    let now = 0;
+    const onSourceError = vi.fn();
+    const audius = fakeAdapter('audius', {
+      searchTracks: vi.fn(async () => [t('audius', 1)]),
+      searchArtists: vi.fn(async () => {
+        throw new CatalogError('UPSTREAM_ERROR', 'artists down');
+      }),
+    });
+    const catalog = setup({ music: [audius], now: () => now, onSourceError });
+    const result = await catalog.search('q', { limit: 5 });
+    expect(result.tracks.map((x) => x.id)).toEqual(['audius:1']);
+    expect(result.sources.audius).toBe('error');
+    expect(onSourceError).toHaveBeenCalledWith('audius', expect.any(CatalogError));
+    now += 31_000;
+    await catalog.search('q', { limit: 5 });
+    expect(audius.searchArtists).toHaveBeenCalledTimes(2);
+  });
+});
