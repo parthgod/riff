@@ -1,0 +1,48 @@
+/** Audius genre names; used verbatim as the trending `genre` filter. */
+export const GENRES = [
+  'Electronic',
+  'Hip-Hop/Rap',
+  'Pop',
+  'Rock',
+  'Alternative',
+  'R&B/Soul',
+  'Lo-Fi',
+  'House',
+  'Deep House',
+  'Tech House',
+  'Techno',
+  'Trance',
+  'Drum & Bass',
+  'Dubstep',
+  'Trap',
+  'Future Bass',
+  'Ambient',
+  'Downtempo',
+  'Experimental',
+  'Jazz',
+  'Funk',
+  'Soundtrack',
+  'Folk',
+  'Acoustic',
+  'Country',
+  'Latin',
+  'Reggae',
+  'Dancehall',
+  'World',
+  'Classical',
+  'Metal',
+  'Punk',
+  'Blues',
+  'Hyperpop',
+  'Disco',
+  'Electro',
+  'Jungle',
+  'Hardstyle',
+  'Moombahton',
+  'Vaporwave',
+] as const;
+
+export type Genre = (typeof GENRES)[number];
+
+/** Home-screen genres for a listener with no history yet. */
+export const DEFAULT_HOME_GENRES: readonly Genre[] = ['Electronic', 'Hip-Hop/Rap', 'Lo-Fi'];
