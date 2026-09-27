@@ -1,3 +1,5 @@
+import { session } from '@riff/db';
+import { eq } from 'drizzle-orm';
 import { describe, expect, test } from 'vitest';
 import { setupApi } from './testing/harness';
 
@@ -49,6 +51,20 @@ describe('auth guard', () => {
         error: { code: 'UNAUTHORIZED', message: 'Sign in to continue' },
       });
     }
+  });
+
+  test('a request that renews the session sends the renewed cookie', async () => {
+    const alice = await api.signUp('alice');
+    // Better Auth renews a session at most once a day; this one was issued two days ago.
+    const fiveDays = 5 * 24 * 60 * 60 * 1000;
+    await api.db
+      .update(session)
+      .set({ expiresAt: new Date(Date.now() + fiveDays) })
+      .where(eq(session.userId, alice.id));
+
+    const res = await alice.get('/me');
+    expect(res.status).toBe(200);
+    expect(res.headers.getSetCookie().join('\n')).toMatch(/session_token=[^;]+;.*Max-Age=604800/);
   });
 
   test('a signed-out cookie no longer works', async () => {

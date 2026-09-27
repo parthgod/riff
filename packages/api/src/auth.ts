@@ -35,8 +35,14 @@ export interface AppEnv {
 /** Rejects requests without a valid session cookie; exposes the user as `c.get('user')`. */
 export const requireUser = (auth: Auth) =>
   createMiddleware<AppEnv>(async (c, next) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    // Better Auth renews a session at most once a day and sets a fresh cookie when it does;
+    // forward that cookie, or the browser's copy expires while the DB session lives on.
+    const { headers, response: session } = await auth.api.getSession({
+      headers: c.req.raw.headers,
+      returnHeaders: true,
+    });
     if (!session) throw new ApiError('UNAUTHORIZED', 'Sign in to continue');
+    for (const cookie of headers.getSetCookie()) c.header('Set-Cookie', cookie, { append: true });
     c.set('user', session.user);
     await next();
   });
