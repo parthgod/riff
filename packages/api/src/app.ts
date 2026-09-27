@@ -4,6 +4,8 @@ import { noStoreByDefault } from './cache-control';
 import { type AppDeps, reportError } from './deps';
 import { ApiError, errorBody, toApiError } from './errors';
 import { catalogRoutes } from './routes/catalog';
+import { followingRoutes } from './routes/following';
+import { historyRoutes } from './routes/history';
 import { likeRoutes } from './routes/likes';
 import { meRoutes } from './routes/me';
 import { playlistRoutes } from './routes/playlists';
@@ -18,7 +20,9 @@ export function apiRoutes(deps: AppDeps) {
     .route('/', catalogRoutes(deps.catalog))
     .route('/', meRoutes())
     .route('/', likeRoutes(deps))
-    .route('/', playlistRoutes(deps));
+    .route('/', playlistRoutes(deps))
+    .route('/', followingRoutes(deps))
+    .route('/', historyRoutes(deps));
 }
 
 export type AppType = ReturnType<typeof apiRoutes>;
