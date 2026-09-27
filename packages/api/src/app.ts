@@ -6,6 +6,7 @@ import { ApiError, errorBody, toApiError } from './errors';
 import { catalogRoutes } from './routes/catalog';
 import { likeRoutes } from './routes/likes';
 import { meRoutes } from './routes/me';
+import { playlistRoutes } from './routes/playlists';
 
 /** Every route, relative to /api. `AppType` (for `hc`) is derived from this. */
 export function apiRoutes(deps: AppDeps) {
@@ -16,7 +17,8 @@ export function apiRoutes(deps: AppDeps) {
     .use('*', requireUser(deps.auth))
     .route('/', catalogRoutes(deps.catalog))
     .route('/', meRoutes())
-    .route('/', likeRoutes(deps));
+    .route('/', likeRoutes(deps))
+    .route('/', playlistRoutes(deps));
 }
 
 export type AppType = ReturnType<typeof apiRoutes>;
