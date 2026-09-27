@@ -3,7 +3,18 @@ packages:
   - packages/*
 
 catalog:
+  '@hono/zod-validator': 0.9.1
   '@types/node': 24.19.0
+  better-auth: 1.7.6
+  drizzle-kit: 0.31.11
+  drizzle-orm: 0.45.3
+  fractional-indexing: 4.0.0
+  hono: 4.13.9
+  postgres: 3.4.9
   typescript: 7.0.2
   vitest: 5.0.2
   zod: 4.6.5
+
+# drizzle-kit bundles esbuild, whose postinstall fetches its native binary.
+allowBuilds:
+  esbuild: true
