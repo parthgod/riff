@@ -6,6 +6,7 @@ import { ApiError, errorBody, toApiError } from './errors';
 import { catalogRoutes } from './routes/catalog';
 import { followingRoutes } from './routes/following';
 import { historyRoutes } from './routes/history';
+import { homeRoutes } from './routes/home';
 import { likeRoutes } from './routes/likes';
 import { meRoutes } from './routes/me';
 import { playlistRoutes } from './routes/playlists';
@@ -22,7 +23,8 @@ export function apiRoutes(deps: AppDeps) {
     .route('/', likeRoutes(deps))
     .route('/', playlistRoutes(deps))
     .route('/', followingRoutes(deps))
-    .route('/', historyRoutes(deps));
+    .route('/', historyRoutes(deps))
+    .route('/', homeRoutes(deps));
 }
 
 export type AppType = ReturnType<typeof apiRoutes>;
