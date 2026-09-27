@@ -16,7 +16,7 @@ Never add YouTube-scraping sources.
 
 ## Commands (from the repo root)
 - `pnpm install`
-- `pnpm test`: all tests via Turbo. The db and api tests use `DATABASE_URL_TEST`, read from the environment or the root `.env`.
+- `pnpm test`: all tests via Turbo. The db and api tests use `DATABASE_URL_TEST`, read from the environment or the root `.env`. In `turbo.json`, `test` depends on `^test` and `typecheck` on a `transit` task: a package re-runs when a workspace dependency changes, and suites that share `riff_test` never run at the same time.
 - `pnpm typecheck`, `pnpm lint`, `pnpm format`
 - `pnpm db:generate`: writes a migration for schema changes. For hand-written SQL: `pnpm --filter @riff/db exec drizzle-kit generate --custom --name=<name>`.
 - `pnpm db:migrate`: applies migrations to `DATABASE_URL`. In production, use Neon's direct (non-pooled) URL: the migrator holds a session-level advisory lock.
