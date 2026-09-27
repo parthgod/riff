@@ -141,3 +141,64 @@ function reshuffle(
   }
   return result;
 }
+
+export function jumpTo(state: QueueState, uid: string): QueueStep {
+  const queued = state.upNext.findIndex((item) => item.uid === uid);
+  if (queued >= 0) {
+    return play({
+      ...state,
+      upNext: state.upNext.slice(queued + 1),
+      current: state.upNext[queued] as QueueItem,
+      currentFromUpNext: true,
+    });
+  }
+  const position = state.order.findIndex((item) => item.uid === uid);
+  if (position > state.index) {
+    return play({
+      ...state,
+      index: position,
+      current: state.order[position] as QueueItem,
+      currentFromUpNext: false,
+    });
+  }
+  return stay(state, 'none');
+}
+
+export function removeFromQueue(state: QueueState, uid: string): QueueState {
+  const keep = (item: QueueItem) => item.uid !== uid;
+  if (state.upNext.some((item) => item.uid === uid)) {
+    return { ...state, upNext: state.upNext.filter(keep) };
+  }
+  const position = state.order.findIndex((item) => item.uid === uid);
+  if (position <= state.index) return state;
+  return { ...state, order: state.order.filter(keep), original: state.original.filter(keep) };
+}
+
+export function moveInQueue(state: QueueState, uid: string, toIndex: number): QueueState {
+  const from = state.upNext.findIndex((item) => item.uid === uid);
+  if (from < 0) return state;
+  const items = state.upNext.slice();
+  const [moved] = items.splice(from, 1);
+  const to = Math.min(Math.max(Math.trunc(toIndex), 0), items.length);
+  items.splice(to, 0, moved as QueueItem);
+  return { ...state, upNext: items };
+}
+
+export function clearUpNext(state: QueueState): QueueState {
+  return { ...state, upNext: [] };
+}
+
+export function toggleShuffle(state: QueueState, env: QueueEnv): QueueState {
+  const anchor = state.order[state.index];
+  if (!state.shuffle) {
+    const rest = shuffled(
+      state.original.filter((item) => item.uid !== anchor?.uid),
+      env.rng,
+    );
+    return anchor
+      ? { ...state, shuffle: true, order: [anchor, ...rest], index: 0 }
+      : { ...state, shuffle: true, order: rest, index: -1 };
+  }
+  const index = anchor ? state.original.findIndex((item) => item.uid === anchor.uid) : -1;
+  return { ...state, shuffle: false, order: state.original, index };
+}
