@@ -3,6 +3,7 @@ import { type AppEnv, requireUser } from './auth';
 import { noStoreByDefault } from './cache-control';
 import { type AppDeps, reportError } from './deps';
 import { ApiError, errorBody, toApiError } from './errors';
+import { catalogRoutes } from './routes/catalog';
 import { meRoutes } from './routes/me';
 
 /** Every route, relative to /api. `AppType` (for `hc`) is derived from this. */
@@ -12,6 +13,7 @@ export function apiRoutes(deps: AppDeps) {
     .get('/health', (c) => c.json({ ok: true as const }))
     .on(['GET', 'POST'], '/auth/*', (c) => deps.auth.handler(c.req.raw))
     .use('*', requireUser(deps.auth))
+    .route('/', catalogRoutes(deps.catalog))
     .route('/', meRoutes());
 }
 
