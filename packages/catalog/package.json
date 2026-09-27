@@ -1,0 +1,22 @@
+{
+  "name": "@riff/catalog",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:live": "LIVE=1 vitest run src/live.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@riff/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
