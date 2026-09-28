@@ -80,7 +80,7 @@ export default function ArtistPage() {
       {data.bio && (
         <section className="flex max-w-3xl flex-col gap-2 px-4 md:px-8">
           <h2 className="font-semibold text-xl tracking-tight">About</h2>
-          <p className="whitespace-pre-line text-muted leading-relaxed">{data.bio}</p>
+          <p className="whitespace-pre-line break-words text-muted leading-relaxed">{data.bio}</p>
         </section>
       )}
     </div>

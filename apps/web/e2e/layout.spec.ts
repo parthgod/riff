@@ -33,3 +33,63 @@ test('pages fit a 360 px phone without sideways scrolling, and hydrate cleanly',
   }
   expect(hydrationErrors).toEqual([]);
 });
+
+test('long upstream text wraps on a 360 px phone', async ({ page }) => {
+  const long = `https://example.com/${'x'.repeat(300)}`;
+  const playlist = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
+  // Offline stand-ins for upstream data, each carrying one long unbroken line.
+  const stubs: Record<string, unknown> = {
+    '/api/artists/audius:wide': {
+      id: 'audius:wide',
+      source: 'audius',
+      name: 'Wide Bio',
+      avatar: {},
+      verified: false,
+      bio: `Find me at ${long}`,
+    },
+    '/api/artists/audius:wide/tracks': [],
+    '/api/artists/audius:wide/related': [],
+    '/api/collections/audius:album:wide': {
+      id: 'audius:album:wide',
+      source: 'audius',
+      kind: 'album',
+      title: 'Wide Notes',
+      artwork: {},
+      owner: { id: 'audius:wide', name: 'Wide Bio' },
+      description: `Liner notes: ${long}`,
+      tracks: [],
+    },
+    [`/api/playlists/${playlist}`]: {
+      id: playlist,
+      name: 'Wide playlist',
+      description: `Notes: ${long}`,
+      coverUrl: null,
+      isPublic: true,
+      trackCount: 0,
+      covers: [],
+      createdAt: '2026-09-01T00:00:00Z',
+      updatedAt: '2026-09-01T00:00:00Z',
+      ownerId: 'someone-else',
+      isOwner: false,
+      entries: [],
+    },
+  };
+  await page.route(/\/api\/(artists|collections|playlists)\//, (route) => {
+    const body = stubs[new URL(route.request().url()).pathname];
+    return body === undefined ? route.continue() : route.fulfill({ json: body });
+  });
+  await page.setViewportSize({ width: 360, height: 740 });
+  await signUp(page);
+  for (const path of [
+    '/artist/audius:wide',
+    '/collection/audius:album:wide',
+    `/playlist/${playlist}`,
+  ]) {
+    await page.goto(path);
+    await expect(page.getByText(long)).toBeVisible();
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, path).toBe(0);
+  }
+});

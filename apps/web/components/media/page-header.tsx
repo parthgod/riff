@@ -28,7 +28,7 @@ export function PageHeader({ kind, title, cover, tintFrom, meta, children }: Pag
         <div className="flex min-w-0 flex-col gap-2">
           <p className="font-medium text-muted text-sm">{kind}</p>
           <h1 className="break-words font-bold text-3xl tracking-tight md:text-5xl">{title}</h1>
-          {meta && <div className="text-muted text-sm">{meta}</div>}
+          {meta && <div className="break-words text-muted text-sm">{meta}</div>}
         </div>
       </header>
       {children && <div className="flex items-center gap-2 px-4 pb-4 md:px-8">{children}</div>}

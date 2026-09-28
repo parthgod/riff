@@ -44,7 +44,7 @@ export default function CollectionPage() {
         <PlayContextButton tracks={tracks} context={context} />
       </PageHeader>
       {data.description && (
-        <p className="max-w-3xl whitespace-pre-line px-4 text-muted text-sm md:px-8">
+        <p className="max-w-3xl whitespace-pre-line break-words px-4 text-muted text-sm md:px-8">
           {data.description}
         </p>
       )}
