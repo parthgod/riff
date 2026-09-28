@@ -6,6 +6,7 @@ Never add YouTube-scraping sources.
 
 - Spec: `docs/superpowers/specs/2026-09-27-riff-v1-design.md`
 - Plans: `docs/superpowers/plans/`. Plans 1 (foundation), 2 (db + api) and 3 (web) are done.
+- Deferred issues: `docs/superpowers/deferred-issues.md` lists what the plan reviews left unfixed; mark an entry fixed when you fix it.
 
 ## Layout
 - `packages/core`: domain types + zod schemas, entity ids, LRC parser, and the queue state machine (exported as `queue`). Pure: no I/O; randomness and ids are injected via `QueueEnv`.
