@@ -19,5 +19,4 @@ test-results/
 .dual-graph/
 .claude/settings.local.json
 .DS_Store
-CONTEXT.md
 next-env.d.ts
