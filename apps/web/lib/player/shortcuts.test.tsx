@@ -56,6 +56,24 @@ describe('shortcutFor', () => {
     expect(captured(' ', {}, field)).toBeNull();
   });
 
+  test.each([
+    ['checkbox', '<input type="checkbox" />'],
+    ['radio button', '<input type="radio" />'],
+    ['range slider', '<input type="range" />'],
+    ['select', '<select><option>a</option></select>'],
+  ])('a native %s keeps Space and the arrow keys', (_, html) => {
+    document.body.innerHTML = html;
+    const control = document.body.firstElementChild as HTMLElement;
+    expect(captured(' ', {}, control)).toBeNull();
+    expect(captured('ArrowRight', {}, control)).toBeNull();
+  });
+
+  test('Space on a focused link plays or pauses (Space does not follow links)', () => {
+    document.body.innerHTML = '<a href="/artist/1">Artist</a>';
+    const link = document.body.firstElementChild as HTMLElement;
+    expect(captured(' ', {}, link)).toBe('togglePlay');
+  });
+
   test('Space on a focused button presses the button instead', () => {
     document.body.innerHTML = '<button>Like</button>';
     const button = document.body.firstElementChild as HTMLElement;

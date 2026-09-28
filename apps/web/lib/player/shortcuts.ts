@@ -15,23 +15,25 @@ export type ShortcutHandlers = Record<ShortcutAction, () => void>;
 /** Seconds moved by ← and →. */
 export const SEEK_STEP_SEC = 5;
 
-const TEXT_INPUT_TYPES = new Set(['checkbox', 'radio', 'button', 'submit', 'reset', 'range']);
-
-function isTyping(target: EventTarget | null): boolean {
+/** Text fields and native controls (checkboxes, radios, ranges, selects) keep their own keys. */
+function ownsKeys(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable || target.getAttribute('contenteditable') === 'true') return true;
-  if (target instanceof HTMLInputElement) return !TEXT_INPUT_TYPES.has(target.type);
-  return target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement
+  );
 }
 
-/** Elements that Space activates by itself. */
+/** Elements that Space activates by itself (links are not among them). */
 const ACTIVATES_ON_SPACE =
-  'button, a[href], summary, [role="button"], [role="menuitem"], [role="option"], [role="tab"], [role="checkbox"], [role="switch"], [role="slider"], [role="link"]';
+  'button, summary, [role="button"], [role="menuitem"], [role="option"], [role="tab"], [role="checkbox"], [role="switch"], [role="slider"]';
 
 /** The player shortcut for a keydown, or null when the key belongs to something else. */
 export function shortcutFor(event: KeyboardEvent): ShortcutAction | null {
   if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return null;
-  if (isTyping(event.target)) return null;
+  if (ownsKeys(event.target)) return null;
   switch (event.key) {
     case ' ': {
       if (event.repeat) return null;
