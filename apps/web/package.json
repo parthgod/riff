@@ -1,0 +1,50 @@
+{
+  "name": "@riff/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "typecheck": "next typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "catalog:",
+    "@dnd-kit/modifiers": "catalog:",
+    "@dnd-kit/sortable": "catalog:",
+    "@dnd-kit/utilities": "catalog:",
+    "@riff/api": "workspace:*",
+    "@riff/core": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-virtual": "catalog:",
+    "better-auth": "catalog:",
+    "clsx": "catalog:",
+    "geist": "catalog:",
+    "lucide-react": "catalog:",
+    "next": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sonner": "catalog:",
+    "tailwind-merge": "catalog:",
+    "zod": "catalog:",
+    "zustand": "catalog:"
+  },
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@tailwindcss/postcss": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "jsdom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

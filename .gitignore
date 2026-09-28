@@ -20,3 +20,4 @@ test-results/
 .claude/settings.local.json
 .DS_Store
 CONTEXT.md
+next-env.d.ts

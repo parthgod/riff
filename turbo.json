@@ -2,8 +2,36 @@
   "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": [".env"],
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": [".next/**", "!.next/cache/**", "dist/**"] },
-    "dev": { "cache": false, "persistent": true },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "ALLOW_SIGNUPS",
+        "AUDIUS_API_URL",
+        "AUDIUS_APP_NAME",
+        "JAMENDO_CLIENT_ID",
+        "RADIO_BROWSER_SERVERS",
+        "VERCEL_URL",
+        "VERCEL_BRANCH_URL"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "env": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "ALLOW_SIGNUPS",
+        "AUDIUS_API_URL",
+        "AUDIUS_APP_NAME",
+        "JAMENDO_CLIENT_ID",
+        "RADIO_BROWSER_SERVERS"
+      ]
+    },
     "transit": { "dependsOn": ["^transit"] },
     "test": { "dependsOn": ["^test"], "outputs": [], "env": ["DATABASE_URL_TEST"] },
     "typecheck": { "dependsOn": ["transit"], "outputs": [] }

@@ -1,0 +1,86 @@
+/* biome-ignore-all lint/complexity/noImportantStyles: the reduced-motion override must beat utility classes */
+@import "tailwindcss";
+
+/*
+ * Riff's palette: warm near-black surfaces and one ember accent.
+ * Text tokens keep at least 4.5:1 contrast on every surface token.
+ * Shapes: interactive controls are pills (rounded-full); panels, menus and cards use
+ * rounded-xl/2xl; artwork uses rounded-md (rounded-full for artists).
+ */
+@theme {
+  --color-bg: oklch(0.155 0.006 65);
+  --color-surface: oklch(0.19 0.007 65);
+  --color-raised: oklch(0.235 0.008 65);
+  --color-line: oklch(0.3 0.008 65);
+  --color-fg: oklch(0.96 0.005 80);
+  --color-muted: oklch(0.74 0.01 70);
+  --color-faint: oklch(0.62 0.01 70);
+  --color-accent: oklch(0.76 0.15 52);
+  --color-accent-strong: oklch(0.82 0.13 60);
+  --color-on-accent: oklch(0.2 0.03 50);
+  --color-danger: oklch(0.7 0.18 25);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --animate-eq: eq 0.9s ease-in-out infinite alternate;
+  --animate-pop-in: pop-in 120ms ease-out;
+  --animate-sheet-in: sheet-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  @keyframes eq {
+    from {
+      transform: scaleY(0.25);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(6%);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    --player-h: 5.5rem;
+    --tabbar-h: 3.75rem;
+    --mini-h: 4.5rem;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+
+  html {
+    color-scheme: dark;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
