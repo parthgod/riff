@@ -1,6 +1,7 @@
 'use client';
 
-import { SearchX } from 'lucide-react';
+import { Radio, SearchX } from 'lucide-react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArtistCard, CollectionCard, TrackCard } from '@/components/media/cards';
@@ -84,6 +85,21 @@ function SearchContent() {
         </>
       ) : (
         <>
+          {/* Phones have no Radio tab (Home · Search · Library), so browsing starts here. */}
+          <div className="px-4 md:px-8">
+            <Link
+              href="/radio"
+              className="flex max-w-md items-center gap-4 rounded-xl bg-surface p-4 transition-colors hover:bg-raised"
+            >
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-accent/15 text-accent">
+                <Radio className="size-6" aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold">Live radio</span>
+                <span className="block text-muted text-sm">Stations from around the world</span>
+              </span>
+            </Link>
+          </div>
           <h1 className="px-4 font-semibold text-2xl tracking-tight md:px-8">Browse genres</h1>
           <GenreGrid />
         </>

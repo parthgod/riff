@@ -100,6 +100,12 @@ describe('Search', () => {
     );
   });
 
+  test('with no query, links to live radio (phones have no Radio tab)', () => {
+    stubApi({});
+    renderPage(<SearchPage />);
+    expect(screen.getByRole('link', { name: /Live radio/ })).toHaveAttribute('href', '/radio');
+  });
+
   test('shows results by kind and names a failed source', async () => {
     nav.search = new URLSearchParams('q=night');
     stubApi({
