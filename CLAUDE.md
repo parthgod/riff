@@ -51,6 +51,7 @@ Never add YouTube-scraping sources.
   - Better Auth skips its origin (CSRF) check under `NODE_ENV=test`, so origin behaviour shows only in dev and production.
   - Radix submenus close on pointer jumps; automation opens them with the keyboard (focus the trigger, then ArrowRight).
   - The player's audio element is `#riff-audio` in the document; the smoke test reads its `currentTime`.
+  - Production builds apply Better Auth's rate limit: `/sign-in` and `/sign-up` allow 3 requests per 10 s. The e2e suite signs up three times, so a new e2e test should reuse an existing test's sign-up rather than add another.
 - Local database: native Postgres 16, with role and databases `riff` / `riff_test` (password `riff`). Env vars live in the root `.env`; see `.env.example`.
 
 <!-- dgc-policy-v11 -->
