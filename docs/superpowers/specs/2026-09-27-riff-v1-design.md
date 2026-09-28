@@ -295,6 +295,8 @@ Actions and rules:
   2. On a media `error`: try the next mirror.
   3. If all mirrors fail: re-resolve once. This also covers expired signatures during a seek; playback resumes at the saved position.
   4. If that also fails: toast "Couldn't play …" and `next()`.
+  5. A source that sends no audio for 15 s (a stalled mirror reports no error) counts as a failed source.
+  6. After 3 tracks fail in a row, playback stops with an error instead of skipping through the whole queue.
 - **Prefetch:** when a track starts, resolve the next item's `StreamInfo` (not its audio) to cut start latency.
 - **Media Session:**
   - Metadata: title, artists, all artwork sizes.
@@ -309,7 +311,7 @@ Actions and rules:
   - `/` focus search
 - **Volume:** the slider value `v` maps to `audio.volume = v²` (perceptual).
 - **Persistence:** `localStorage` key `riff:player:v1` stores queue state, the current position and volume. It is written every 5 s and on `pagehide`, then restored on load **paused**.
-- **History:** accumulated audible playback time (not position) is tracked for each play. `POST /me/history` is sent once when it reaches 30 s, or on `ended` if the track is shorter.
+- **History:** accumulated audible playback time (not position; playing and not muted) is tracked for each play. `POST /me/history` is sent once when it reaches 30 s, or on `ended` if the track is shorter.
 - **Live tracks:** no seek bar or duration (a "LIVE" badge instead), and prev/seek are disabled.
 
 ## 9. Web app (`apps/web`)
@@ -326,6 +328,7 @@ Actions and rules:
 /playlist/[id]                          User playlist (edit, drag reorder, remove)
 /liked                                  Liked Songs
 /radio                                  Radio: top stations + search
+/library                                Library: Liked Songs, playlists, followed artists (the phone's third tab)
 ```
 
 - **Route protection:** Next.js `proxy.ts` (Next 16's replacement for middleware) redirects requests without a session cookie to `/sign-in`. The API still enforces auth itself.
@@ -369,7 +372,9 @@ Dark UI with its own identity. Not a pixel copy of Spotify, and not Spotify gree
   - Aggregator tests with fake adapters: timeout, failure, interleave, dedupe, `sources` statuses.
   - Cache tests: TTL expiry, LRU eviction, single-flight.
 - **`api`:** route tests via `app.request()` against a real Postgres database, `riff_test`, truncated between tests, with a stubbed catalog. They cover the auth guard, likes idempotency, playlist ordering and reorder, history, the home fallback, and error mapping.
-- **`web`:** a Playwright smoke test tagged `@live` (uses real Audius): sign up → search "lofi" → play the first result → `currentTime` advances → like → it appears in Liked Songs.
+- **`web`:**
+  - Vitest + Testing Library for the player (engine, store, persistence, Media Session, shortcuts), the query hooks and the components, with `fetch` stubbed.
+  - Playwright against a production build and `riff_test`: the smoke test tagged `@live` (uses real Audius): sign up → search "lofi" → play the first result → `currentTime` advances → like → it appears in Liked Songs. Also a `@live` playlist keyboard-reorder test, and offline checks for the sign-in redirect and 360 px layouts.
 - **Commands:** `pnpm test` runs the unit and API tests; `pnpm test:e2e` runs Playwright.
 
 ## 12. Environments
@@ -391,6 +396,7 @@ Dark UI with its own identity. Not a pixel copy of Spotify, and not Spotify gree
 | `AUDIUS_APP_NAME` | default `riff` |
 | `JAMENDO_CLIENT_ID` | optional; enables Jamendo |
 | `RADIO_BROWSER_SERVERS` | optional comma list; default `de1,de2` mirrors |
+| `VERCEL_URL`, `VERCEL_BRANCH_URL` | set by Vercel; a preview trusts its own URLs for sign-in |
 
 ### Production
 

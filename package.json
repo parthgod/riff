@@ -14,7 +14,8 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "db:generate": "pnpm --filter @riff/db generate",
-    "db:migrate": "pnpm --filter @riff/db migrate"
+    "db:migrate": "pnpm --filter @riff/db migrate",
+    "test:e2e": "pnpm --filter @riff/web test:e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

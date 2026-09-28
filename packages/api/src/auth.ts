@@ -12,14 +12,17 @@ export interface AuthOptions {
   baseURL: string;
   /** false once the owner's account exists (ALLOW_SIGNUPS). */
   allowSignups: boolean;
+  /** Origins besides `baseURL` allowed to make cookie-bearing auth requests. */
+  trustedOrigins?: string[];
 }
 
-export function createAuth({ db, secret, baseURL, allowSignups }: AuthOptions) {
+export function createAuth({ db, secret, baseURL, allowSignups, trustedOrigins }: AuthOptions) {
   return betterAuth({
     appName: 'Riff',
     basePath: '/api/auth',
     baseURL,
     secret,
+    trustedOrigins,
     database: drizzleAdapter(db, { provider: 'pg', schema }),
     emailAndPassword: { enabled: true, disableSignUp: !allowSignups },
   });

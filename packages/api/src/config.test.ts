@@ -42,3 +42,33 @@ test('createApiFromEnv builds a working app without touching the database', asyn
   expect(await res.json()).toEqual({ ok: true });
   await close();
 });
+
+describe('trusted origins (Vercel previews)', () => {
+  test('trusts the deployment and branch URLs that Vercel sets', () => {
+    const preview = {
+      ...env,
+      VERCEL_URL: 'riff-abc123.vercel.app',
+      VERCEL_BRANCH_URL: 'riff-git-feat.vercel.app',
+    };
+    expect(apiConfigFromEnv(preview).trustedOrigins).toEqual([
+      'https://riff-abc123.vercel.app',
+      'https://riff-git-feat.vercel.app',
+    ]);
+    expect(apiConfigFromEnv(env).trustedOrigins).toEqual([]);
+  });
+
+  test('Better Auth trusts them next to the app URL', async () => {
+    // Better Auth skips origin checks under NODE_ENV=test, so this checks its resolved
+    // configuration; the check itself runs in dev and production.
+    const { auth, close } = createApiFromEnv({
+      ...env,
+      VERCEL_BRANCH_URL: 'riff-git-feat.vercel.app',
+    });
+    const context = await auth.$context;
+    expect(context.trustedOrigins).toEqual(
+      expect.arrayContaining(['http://localhost:3000', 'https://riff-git-feat.vercel.app']),
+    );
+    expect(context.trustedOrigins).not.toContain('https://evil.example');
+    await close();
+  });
+});
