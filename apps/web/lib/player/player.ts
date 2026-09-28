@@ -144,8 +144,12 @@ export function createPlayer(deps: PlayerDeps): Player {
       }
       deps.notify(`Couldn’t play “${track.title}”. Skipping.`);
       const step = q.next(get().queue, deps.env);
-      if (step.effect === 'play') apply(step);
-      else set({ status: 'error' });
+      if (step.effect !== 'play') set({ status: 'error' });
+      else if (get().status === 'paused') {
+        // The listener paused: move on, but load the next track only when they press play.
+        const next = step.state.current?.track;
+        set({ queue: step.state, position: 0, duration: next?.durationSec ?? null });
+      } else apply(step);
     },
   };
 

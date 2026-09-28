@@ -197,6 +197,23 @@ describe('failures', () => {
     );
   });
 
+  test('a failure after the listener paused moves on but stays paused', async () => {
+    let fail: (error: Error) => void = () => {};
+    resolve.mockImplementationOnce(() => new Promise((_, reject) => (fail = reject)));
+    player.actions.playContext(tracks(3), 0, ctx);
+    player.actions.togglePlay();
+    fail(new Error('502'));
+    await settle();
+    expect(currentId()).toBe('audius:t2');
+    expect(state()).toMatchObject({ status: 'paused', position: 0 });
+    expect(media.paused).toBe(true);
+    expect(resolve).toHaveBeenCalledTimes(1);
+    player.actions.togglePlay();
+    await started();
+    expect(media.src).toBe('https://a.test/audius:t2');
+    expect(state().status).toBe('playing');
+  });
+
   test('a failure on the last track leaves the player in the error state', async () => {
     resolve.mockRejectedValue(new Error('502'));
     player.actions.playContext(tracks(1), 0, ctx);
