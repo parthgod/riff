@@ -19,9 +19,15 @@ export function SearchField({ className }: { className?: string }) {
   const urlQuery = onSearchPage ? (params.get('q') ?? '') : '';
   const [value, setValue] = useState(urlQuery);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  /** Queries this box navigated to whose URL hasn't landed yet. */
+  const pending = useRef(new Set<string>());
 
   // Follow the URL when it changes from elsewhere (Back, a genre link, leaving the page).
+  // The URL catching up with this box's own search is not such a change: the listener may
+  // have typed more since, and resetting the box would erase it.
   useEffect(() => {
+    if (pending.current.delete(urlQuery)) return;
+    pending.current.clear();
     setValue(urlQuery);
   }, [urlQuery]);
 
@@ -29,6 +35,7 @@ export function SearchField({ className }: { className?: string }) {
 
   const navigate = (text: string) => {
     const q = text.trim();
+    pending.current.add(q);
     const href = q ? `/search?q=${encodeURIComponent(q)}` : '/search';
     if (onSearchPage) router.replace(href, { scroll: false });
     else router.push(href);

@@ -49,6 +49,24 @@ describe('SearchField', () => {
     expect(nav.router.replace).toHaveBeenCalledWith('/search', { scroll: false });
   });
 
+  test('typing continues while an earlier search is still navigating', () => {
+    nav.pathname = '/search';
+    nav.params = new URLSearchParams('q=lo');
+    const { rerender } = render(<SearchField />);
+    type('lofi');
+    act(() => vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS));
+    expect(nav.router.replace).toHaveBeenLastCalledWith('/search?q=lofi', { scroll: false });
+    type('lofi beats');
+    // The first search lands after the listener typed more.
+    nav.params = new URLSearchParams('q=lofi');
+    rerender(<SearchField />);
+    expect(screen.getByRole('searchbox')).toHaveValue('lofi beats');
+    // A change from elsewhere (Back, a genre link) still shows up in the box.
+    nav.params = new URLSearchParams('q=jazz');
+    rerender(<SearchField />);
+    expect(screen.getByRole('searchbox')).toHaveValue('jazz');
+  });
+
   test('Enter searches at once', () => {
     render(<SearchField />);
     type('ambient');
