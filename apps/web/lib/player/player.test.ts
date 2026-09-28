@@ -159,6 +159,19 @@ describe('playback', () => {
     media.emit('ended');
     expect(currentId()).toBe('audius:t9');
   });
+
+  test('the old track ending while the chosen one resolves does not skip it', async () => {
+    player.actions.playContext(tracks(5), 0, ctx);
+    await started();
+    let release: (value: StreamInfo) => void = () => {};
+    resolve.mockImplementationOnce(() => new Promise((done) => (release = done)));
+    player.actions.jumpTo(state().queue.order[2]?.uid as string);
+    media.emit('ended');
+    release({ url: 'https://a.test/audius:t3', mirrors: [], live: false });
+    await started();
+    expect(currentId()).toBe('audius:t3');
+    expect(media.src).toBe('https://a.test/audius:t3');
+  });
 });
 
 describe('failures', () => {

@@ -282,3 +282,55 @@ describe('controls and element events', () => {
     expect(media.listenerCount()).toBe(0);
   });
 });
+
+describe('switching tracks while the next stream resolves', () => {
+  const pending = () => {
+    let release: (value: StreamInfo) => void = () => {};
+    resolve.mockImplementationOnce(() => new Promise((done) => (release = done)));
+    return (value: StreamInfo) => release(value);
+  };
+
+  test('the old source’s stall watchdog does not fire on the new track', async () => {
+    vi.useFakeTimers();
+    try {
+      await playing(track(1));
+      media.emit('waiting');
+      const release = pending();
+      const next = engine.load(track(2), { autoplay: true });
+      vi.advanceTimersByTime(STALL_TIMEOUT_MS);
+      expect(media.srcHistory).toEqual(['https://a.test/audius:t1']);
+      release(info('https://a.test/audius:t2'));
+      await next;
+      expect(media.src).toBe('https://a.test/audius:t2');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('events from the old source are ignored', async () => {
+    await playing(track(1));
+    const release = pending();
+    const next = engine.load(track(2), { autoplay: true });
+    events.onTime.mockClear();
+    media.currentTime = 90;
+    media.emit('timeupdate');
+    media.emit('ended');
+    expect(events.onTime).not.toHaveBeenCalled();
+    expect(events.onEnded).not.toHaveBeenCalled();
+    release(info('https://a.test/audius:t2'));
+    await next;
+  });
+
+  test('play during the wait starts the new stream, not the old one', async () => {
+    await playing(track(1));
+    const release = pending();
+    const next = engine.load(track(2), { autoplay: true });
+    engine.pause();
+    await engine.play();
+    expect(media.paused).toBe(true);
+    release(info('https://a.test/audius:t2'));
+    await next;
+    expect(media.src).toBe('https://a.test/audius:t2');
+    expect(media.paused).toBe(false);
+  });
+});

@@ -95,6 +95,10 @@ export class AudioEngine {
   async load(track: Track, { autoplay, startAt = 0 }: LoadOptions): Promise<void> {
     const generation = ++this.generation;
     this.track = track;
+    // Until the new stream is set, the element still holds the previous track: stop its
+    // watchdog and ignore its events (see `hasStream`).
+    this.disarmWatchdog();
+    this.sources = [];
     this.reResolved = false;
     this.wantsPlay = autoplay;
     this.resumeAt = track.isLive ? 0 : startAt;
@@ -113,6 +117,8 @@ export class AudioEngine {
 
   async play(): Promise<void> {
     this.wantsPlay = true;
+    // Still resolving: the stream starts itself when it arrives.
+    if (!this.hasStream()) return;
     this.armWatchdog();
     await this.media.play().catch(this.handlePlayRejection);
   }
@@ -154,6 +160,7 @@ export class AudioEngine {
   unload(): void {
     this.generation++;
     this.track = null;
+    this.sources = [];
     this.wantsPlay = false;
     this.disarmWatchdog();
     this.media.pause();
@@ -171,6 +178,11 @@ export class AudioEngine {
     this.prefetched.delete(trackId);
     if (!entry || Date.now() - entry.at > PREFETCH_TTL_MS) return null;
     return entry.info;
+  }
+
+  /** False while a load is resolving: element events then belong to the previous track. */
+  private hasStream(): boolean {
+    return this.sources.length > 0;
   }
 
   private useStream(info: StreamInfo): void {
@@ -208,11 +220,13 @@ export class AudioEngine {
   };
 
   private readonly handleMetadata = () => {
+    if (!this.hasStream()) return;
     if (this.resumeAt > 0) this.media.currentTime = this.resumeAt;
     this.resumeAt = 0;
   };
 
   private readonly handlePlaying = () => {
+    if (!this.hasStream()) return;
     this.disarmWatchdog();
     // Audio is flowing again, so a later expiry (e.g. on a seek) earns a fresh resolution.
     this.reResolved = false;
@@ -220,7 +234,7 @@ export class AudioEngine {
   };
 
   private readonly handleWaiting = () => {
-    if (!this.wantsPlay) return;
+    if (!this.wantsPlay || !this.hasStream()) return;
     this.armWatchdog();
     this.events.onStatus('loading');
   };
@@ -234,23 +248,26 @@ export class AudioEngine {
   };
 
   private readonly handleTime = () => {
+    if (!this.hasStream()) return;
     this.position = this.media.currentTime;
     this.events.onTime(this.position);
   };
 
   private readonly handleDuration = () => {
+    if (!this.hasStream()) return;
     const { duration } = this.media;
     this.events.onDuration(Number.isFinite(duration) ? duration : null);
   };
 
   private readonly handleEnded = () => {
+    if (!this.hasStream()) return;
     this.events.onEnded();
   };
 
   private readonly handleError = () => {
     this.disarmWatchdog();
     const track = this.track;
-    if (!track || this.sources.length === 0) return;
+    if (!track || !this.hasStream()) return;
     this.resumeAt = track.isLive ? 0 : this.position;
     if (this.sourceIndex + 1 < this.sources.length) {
       this.sourceIndex++;
