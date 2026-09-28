@@ -1,16 +1,19 @@
 import type { Track } from '../types';
 
-export type RepeatMode = 'off' | 'all' | 'one';
+export const REPEAT_MODES = ['off', 'all', 'one'] as const;
+export type RepeatMode = (typeof REPEAT_MODES)[number];
 
-export type QueueContextType =
-  | 'playlist'
-  | 'collection'
-  | 'artist'
-  | 'liked'
-  | 'search'
-  | 'trending'
-  | 'radio'
-  | 'history';
+export const QUEUE_CONTEXT_TYPES = [
+  'playlist',
+  'collection',
+  'artist',
+  'liked',
+  'search',
+  'trending',
+  'radio',
+  'history',
+] as const;
+export type QueueContextType = (typeof QUEUE_CONTEXT_TYPES)[number];
 
 export interface QueueContext {
   type: QueueContextType;

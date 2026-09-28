@@ -16,6 +16,12 @@ describe('playContext', () => {
     expect(currentId(q.playContext(q.emptyQueue, tracks(3), -5, ctx, testEnv()))).toBe('audius:t1');
   });
 
+  test('treats a NaN start index as the first track', () => {
+    const s = q.playContext(q.emptyQueue, tracks(3), Number.NaN, ctx, testEnv());
+    expect(currentId(s)).toBe('audius:t1');
+    expect(s.index).toBe(0);
+  });
+
   test('ignores an empty context', () => {
     expect(q.playContext(q.emptyQueue, [], 0, ctx, testEnv())).toBe(q.emptyQueue);
   });
@@ -101,6 +107,22 @@ describe('next', () => {
         .map((t) => t.id)
         .sort(),
     );
+  });
+
+  test('on wrap, never starts the new cycle with the last context track, even after a queued one', () => {
+    const base = testEnv();
+    const rolls = [0, 0.99]; // shuffles [t1, t2, t3] into [t3, t2, t1]
+    const env = { uid: base.uid, rng: () => rolls.shift() ?? 0 };
+    let s: QueueState = {
+      ...q.playContext(q.emptyQueue, tracks(3), 2, ctx, env),
+      shuffle: true,
+      repeat: 'all',
+    };
+    s = q.next(q.addToQueue(s, [track(9)], env), env).state;
+    expect(currentId(s)).toBe('audius:t9');
+    const step = q.next(s, env);
+    expect(step.effect).toBe('play');
+    expect(currentId(step.state)).not.toBe('audius:t3');
   });
 
   test('stops on an empty queue', () => {

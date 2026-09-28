@@ -39,7 +39,8 @@ export function playContext(
 ): QueueState {
   if (tracks.length === 0) return state;
   const items = toItems(tracks, env);
-  const start = Math.min(Math.max(Math.trunc(startIndex), 0), items.length - 1);
+  const requested = Number.isNaN(startIndex) ? 0 : Math.trunc(startIndex);
+  const start = Math.min(Math.max(requested, 0), items.length - 1);
   const first = items[start] as QueueItem;
   const order = state.shuffle
     ? [
@@ -71,7 +72,9 @@ export function next(state: QueueState, env: QueueEnv): QueueStep {
   }
 
   if (state.repeat === 'all' && state.order.length > 0) {
-    const order = state.shuffle ? reshuffle(state.order, state.current, env.rng) : state.order;
+    // Anchor on the last context item, not `current`: that may be a queued item.
+    const last = state.order[state.index] ?? null;
+    const order = state.shuffle ? reshuffle(state.order, last, env.rng) : state.order;
     return play({
       ...state,
       order,
