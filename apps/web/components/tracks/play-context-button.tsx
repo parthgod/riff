@@ -3,9 +3,11 @@
 import type { QueueContext, Track } from '@riff/core';
 import { Pause, Play } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 import { Button } from '@/components/ui/button';
 import { player, usePlayer } from '@/lib/player/instance';
+import { describeError } from '@/lib/query-client';
 
 export const sameContext = (a: QueueContext | null, b: QueueContext) =>
   a !== null && a.type === b.type && a.id === b.id;
@@ -35,12 +37,18 @@ export function PlayContextButton({ tracks, context, loadAll }: PlayContextButto
     }
     let list = tracks;
     if (loadAll) {
+      const playingBefore = player.store.getState().queue.context;
       setLoading(true);
       try {
         list = await loadAll();
+      } catch (error) {
+        toast.error(`Couldn’t load ${context.name}. ${describeError(error)}`);
+        return;
       } finally {
         setLoading(false);
       }
+      // The listener started something else while the list loaded: leave that playing.
+      if (player.store.getState().queue.context !== playingBefore) return;
     }
     player.actions.playContext(list, 0, context);
   }

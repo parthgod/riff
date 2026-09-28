@@ -29,8 +29,12 @@ export default function LikedPage() {
 
   /** Every liked track, fetching the remaining pages first, so "play" covers them all. */
   const loadAll = useCallback(async (): Promise<Track[]> => {
-    let result: Pick<typeof likes, 'data' | 'hasNextPage' | 'fetchNextPage'> = likes;
-    while (result.hasNextPage) result = await result.fetchNextPage();
+    let result: Pick<typeof likes, 'data' | 'error' | 'hasNextPage' | 'fetchNextPage'> = likes;
+    while (result.hasNextPage) {
+      result = await result.fetchNextPage();
+      // A failed page resolves (it doesn't reject) and keeps hasNextPage set: stop here.
+      if (result.error) throw result.error;
+    }
     return result.data?.pages.flatMap((page) => page.items.map((item) => item.track)) ?? [];
   }, [likes]);
 

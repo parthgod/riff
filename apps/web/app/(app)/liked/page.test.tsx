@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { toast } from 'sonner';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { apiError, stubApi } from '@/test/api-stub';
 import { track } from '@/test/fixtures';
@@ -17,7 +18,10 @@ const page = (n: number, nextCursor: string | null) => ({
 });
 
 beforeEach(() => player.actions.reset());
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.clearAllMocks();
+});
 
 test('lists liked songs with the total count', async () => {
   stubApi({
@@ -73,4 +77,50 @@ test('a failure offers a retry', async () => {
   const { wrapper } = queryWrapper();
   render(<LikedPage />, { wrapper });
   expect(await screen.findByRole('button', { name: 'Retry' })).toBeInTheDocument();
+});
+
+test('play stops when a page fails to load, and says so', async () => {
+  const { requests } = stubApi({
+    'GET /api/me/likes': ({ query }) =>
+      query.get('cursor')
+        ? apiError(500, 'INTERNAL', 'Something went wrong')
+        : Response.json(page(1, 'c1')),
+    'GET /api/me/likes/ids': ['audius:t1', 'audius:t2'],
+  });
+  const { wrapper } = queryWrapper();
+  render(<LikedPage />, { wrapper });
+  const play = await screen.findByRole('button', { name: 'Play Liked Songs' });
+  await userEvent.click(play);
+  await waitFor(() =>
+    expect(toast.error).toHaveBeenCalledWith('Couldn’t load Liked Songs. Something went wrong'),
+  );
+  // No retry loop: once the failure is reported, no more pages are requested.
+  const settled = requests.length;
+  await new Promise((done) => setTimeout(done, 300));
+  expect(requests).toHaveLength(settled);
+  expect(player.store.getState().queue.current).toBeNull();
+  expect(play).toBeEnabled();
+});
+
+test('something else started while the list loads keeps playing', async () => {
+  let release: () => void = () => {};
+  stubApi({
+    'GET /api/me/likes': ({ query }) =>
+      query.get('cursor')
+        ? new Promise<Response>((done) => {
+            release = () => done(Response.json(page(2, null)));
+          })
+        : Response.json(page(1, 'c1')),
+    'GET /api/me/likes/ids': ['audius:t1', 'audius:t2'],
+  });
+  const { wrapper } = queryWrapper();
+  render(<LikedPage />, { wrapper });
+  await userEvent.click(await screen.findByRole('button', { name: 'Play Liked Songs' }));
+  act(() => player.actions.playContext([track(9)], 0, { type: 'search', name: 'Search' }));
+  act(() => release());
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Play Liked Songs' })).toBeEnabled(),
+  );
+  expect(player.store.getState().queue.current?.track.id).toBe('audius:t9');
+  expect(player.store.getState().queue.context?.type).toBe('search');
 });
